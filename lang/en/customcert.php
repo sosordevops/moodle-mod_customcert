@@ -100,6 +100,7 @@ $string['fontcolour_help'] = 'The colour of the font.';
 $string['fontsize'] = 'Size';
 $string['fontsize_help'] = 'The size of the font in points.';
 $string['getcustomcert'] = 'View certificate';
+$string['getallcustomcert'] = 'Download all';
 $string['gradeoutcome'] = 'Outcome';
 $string['height'] = 'Height';
 $string['height_help'] = 'This is the height of the certificate PDF in mm. For reference an A4 piece of paper is 297mm high and a letter is 279mm high.';

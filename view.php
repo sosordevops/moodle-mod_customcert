@@ -26,6 +26,7 @@ require_once('../../config.php');
 
 $id = required_param('id', PARAM_INT);
 $downloadown = optional_param('downloadown', false, PARAM_BOOL);
+$downloadall = optional_param('downloadall', false, PARAM_BOOL);
 $downloadtable = optional_param('download', null, PARAM_ALPHA);
 $downloadissue = optional_param('downloadissue', 0, PARAM_INT);
 $deleteissue = optional_param('deleteissue', 0, PARAM_INT);
@@ -101,9 +102,10 @@ $event->add_record_snapshot('customcert', $customcert);
 $event->trigger();
 
 // Check that we are not downloading a certificate PDF.
-if (!$downloadown && !$downloadissue) {
+if (!$downloadown && !$downloadissue && !$downloadall) {
     // Get the current groups mode.
-    if ($groupmode = groups_get_activity_groupmode($cm)) {
+    $groupmode = groups_get_activity_groupmode($cm);
+    if ($groupmode) {
         groups_get_activity_group($cm, true);
     }
 
@@ -137,12 +139,21 @@ if (!$downloadown && !$downloadissue) {
 
     // Create the button to download the customcert.
     $downloadbutton = '';
+    $downloadAllButtonString = '';
     if ($canreceive) {
         $linkname = get_string('getcustomcert', 'customcert');
         $link = new moodle_url('/mod/customcert/view.php', array('id' => $cm->id, 'downloadown' => true));
         $downloadbutton = new single_button($link, $linkname, 'get', true);
         $downloadbutton->class .= ' m-b-1';  // Seems a bit hackish, ahem.
         $downloadbutton = $OUTPUT->render($downloadbutton);
+
+        if ($canmanage) {
+            $downloadAllLinkName = get_string('getallcustomcert', 'customcert');
+            $downloadAllLink = new moodle_url('/mod/customcert/view.php', array('id' => $cm->id, 'downloadall' => true));
+            $downloadAllButton = new single_button($downloadAllLink, $downloadAllLinkName, 'get', true);
+            $downloadAllButton->class .= ' m-b-1'; 
+            $downloadAllButtonString = $OUTPUT->render($downloadAllButton);
+        }
     }
 
     // Output all the page data.
@@ -151,6 +162,7 @@ if (!$downloadown && !$downloadissue) {
     echo $intro;
     echo $issuehtml;
     echo $downloadbutton;
+    echo $downloadAllButtonString;
     if (isset($reporttable)) {
         $numissues = \mod_customcert\certificate::get_number_of_issues($customcert->id, $cm, $groupmode);
         echo $OUTPUT->heading(get_string('listofissues', 'customcert', $numissues), 3);
@@ -171,6 +183,9 @@ if (!$downloadown && !$downloadissue) {
         // Set the custom certificate as viewed.
         $completion = new completion_info($course);
         $completion->set_module_viewed($cm);
+    } else if ($downloadall) {
+        $groupmode = groups_get_activity_groupmode($cm);
+        \mod_customcert\output\bulk_download::process($customcert->id, $cm, $groupmode, $template);
     } else if ($downloadissue && $canviewreport) {
         $userid = $downloadissue;
     }
@@ -182,8 +197,11 @@ if (!$downloadown && !$downloadissue) {
 
     \core\session\manager::write_close();
 
-    // Now we want to generate the PDF.
-    $template = new \mod_customcert\template($template);
-    $template->generate_pdf(false, $userid);
-    exit();
+    if(!$downloadall) {
+        // Now we want to generate the PDF.
+        $template = new \mod_customcert\template($template);
+        $template->generate_pdf(false, $userid);
+        exit();
+    }
+    
 }
