@@ -140,13 +140,14 @@ if (!$downloadown && !$downloadissue && !$downloadall) {
     // Create the button to download the customcert.
     $downloadbutton = '';
     $downloadAllButtonString = '';
+    $numissues = \mod_customcert\certificate::get_number_of_issues($customcert->id, $cm, $groupmode);
     if ($canreceive) {
         $linkname = get_string('getcustomcert', 'customcert');
         $link = new moodle_url('/mod/customcert/view.php', array('id' => $cm->id, 'downloadown' => true));
         $downloadbutton = new single_button($link, $linkname, 'get', true);
         $downloadbutton->class .= ' m-b-1';  // Seems a bit hackish, ahem.
         $downloadbutton = $OUTPUT->render($downloadbutton);
-
+        
         if ($canmanage) {
             $downloadAllLinkName = get_string('getallcustomcert', 'customcert');
             $downloadAllLink = new moodle_url('/mod/customcert/view.php', array('id' => $cm->id, 'downloadall' => true));
@@ -162,9 +163,13 @@ if (!$downloadown && !$downloadissue && !$downloadall) {
     echo $intro;
     echo $issuehtml;
     echo $downloadbutton;
-    echo $downloadAllButtonString;
+    
+    if ($numissues > 0) {
+        echo $downloadAllButtonString;
+    }
+    
     if (isset($reporttable)) {
-        $numissues = \mod_customcert\certificate::get_number_of_issues($customcert->id, $cm, $groupmode);
+        
         echo $OUTPUT->heading(get_string('listofissues', 'customcert', $numissues), 3);
         groups_print_activity_menu($cm, $pageurl);
         echo $reporttable->out($perpage, false);
@@ -201,7 +206,7 @@ if (!$downloadown && !$downloadissue && !$downloadall) {
         // Now we want to generate the PDF.
         $template = new \mod_customcert\template($template);
         $template->generate_pdf(false, $userid);
-        exit();
+        
     }
-    
+    exit();
 }
