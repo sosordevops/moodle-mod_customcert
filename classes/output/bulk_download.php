@@ -20,7 +20,11 @@ class bulk_download {
         if (is_dir($tempdir)) {
             exec("rm -fR $tempdir");
         }
-        mkdir($tempdir);
+        $dirCreated = mkdir($tempdir);
+        
+        if (false === $dirCreated) {
+            throw new \Exception('Cannot create temp dir');
+        }
         
         // get total number of issues to define number of cycles
         $numberOfIssues = \mod_customcert\certificate::get_number_of_issues($customCertId, $courseModule, $groupMode);
@@ -35,11 +39,12 @@ class bulk_download {
 
             foreach ($issuesList as $userId => $certIssue) {
                 $template = new \mod_customcert\template($template);
+                $user = \core_user::get_user($userId);
                 $filename = sprintf(
                     $tempdir . '/%s_%s_%s.pdf', 
                     $certIssue->firstname, 
                     $certIssue->lastname, 
-                    isset($certIssue->idnumber) ? $certIssue->idnumber : ''
+                    isset($user->idnumber) ? $user->idnumber : $userId
                 );
                 $saved = file_put_contents(
                     $filename,
@@ -55,10 +60,16 @@ class bulk_download {
         
         if($numerOfSavedCertificates > 0) {
             // zip files
-            $zipfilename = strtolower(sprintf('certificati_%s.zip', str_replace(' ', '_', $courseModule->name)));
+            $zipfilename = strtolower(
+                sprintf('certificati_%s.zip', str_replace(' ', '_', preg_replace("/[^A-Za-z0-9 ]/", '', $courseModule->name)))
+            );
             $zipfilepath = "$tempdir/$zipfilename";
             exec("cd $tempdir && zip -r9 $zipfilename *.pdf");
-
+            
+            if (false === is_file($zipfilename)) {
+                throw new \Exception('File not created');
+            }
+            
 	    header("Pragma: public");
 	    header("Expires: 0");
 	    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
@@ -71,7 +82,7 @@ class bulk_download {
 	    ob_end_flush();
 	    $read = readfile($zipfilepath);
             if (false === $read) {
-                throw new Excepion('Impossible to read zip archive');
+                throw new \Excepion('Impossible to read zip archive');
             }
             exit;
         }
