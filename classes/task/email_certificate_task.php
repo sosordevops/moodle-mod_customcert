@@ -190,7 +190,15 @@ class email_certificate_task extends \core\task\scheduled_task {
                 $filecontents = $template->generate_pdf(false, $user->id, true);
 
                 // Set the name of the file we are going to send.
-                $filename = $courseshortname . '_' . $certificatename;
+                $filename = sprintf(
+                    '%s_%s_%s_%s_%s',
+                    $courseshortname,
+                    $certificatename,
+                    $user->lastname,
+                    $user->firstname,
+                    isset($user->idnumber) ? $user->idnumber : ''
+                );
+
                 $filename = \core_text::entities_to_utf8($filename);
                 $filename = strip_tags($filename);
                 $filename = rtrim($filename, '.');
