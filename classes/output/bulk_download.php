@@ -66,7 +66,7 @@ class bulk_download {
             $zipfilepath = "$tempdir/$zipfilename";
             exec("cd $tempdir && zip -r9 $zipfilename *.pdf");
             
-            if (false === is_file($zipfilename)) {
+            if (false === is_file($zipfilepath)) {
                 throw new \Exception('File not created');
             }
             
